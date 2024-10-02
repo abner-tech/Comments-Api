@@ -33,7 +33,7 @@ func (a *applicationDependences) serverErrorResponse(w http.ResponseWriter, r *h
 func (a *applicationDependences) notFoundResponse(w http.ResponseWriter, r *http.Request) {
 	//we only log server errors, not client errors
 	//prepare a response to send to the client
-	message := "the requested resousce cound not be found"
+	message := "the requested resource cound not be found"
 	a.errorResponseJSON(w, r, http.StatusNotFound, message)
 }
 
