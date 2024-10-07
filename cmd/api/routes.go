@@ -18,6 +18,7 @@ func (a *applicationDependences) routes() http.Handler {
 
 	//setup routes
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", a.healthChechHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/comments", a.createCommentHandler)
 
 	return a.recoverPanic(router)
 }
