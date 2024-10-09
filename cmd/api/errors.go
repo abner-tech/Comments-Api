@@ -44,3 +44,8 @@ func (a *applicationDependences) methodNotAllowedResponse(w http.ResponseWriter,
 	message := fmt.Sprintf("the %s method is not supported for this resource", r.Method)
 	a.errorResponseJSON(w, r, http.StatusMethodNotAllowed, message)
 }
+
+// send an error response if our client messes up with a 400 (bad request)
+func (a *applicationDependences) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
+	a.errorResponseJSON(w, r, http.StatusBadRequest, err.Error())
+}

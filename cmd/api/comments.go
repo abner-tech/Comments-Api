@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	//import data package whichcontains the definition for Comment
@@ -17,10 +16,11 @@ func (a *applicationDependences) createCommentHandler(w http.ResponseWriter, r *
 		Author  string `json:"author"`
 	}
 
-	//erform decoding
-	err := json.NewDecoder(r.Body).Decode(&incomingData)
+	//perform decoding
+
+	err := a.readJSON(w, r, &incomingData)
 	if err != nil {
-		a.errorResponseJSON(w, r, http.StatusBadRequest, err.Error())
+		a.badRequestResponse(w, r, err)
 		return
 	}
 
