@@ -53,17 +53,17 @@ func (a *applicationDependences) readJSON(w http.ResponseWriter, r *http.Request
 		var maxBytesError *http.MaxBytesError
 
 		switch {
-		case errors.As(err, syntaxError):
-			return fmt.Errorf("The Body contains badly-formd JSON (at character %d)", syntaxError.Offset)
+		case errors.As(err, &syntaxError):
+			return fmt.Errorf("the body contains badly-formd json (at character %d)", syntaxError.Offset)
 		case errors.Is(err, io.ErrUnexpectedEOF):
-			return errors.New("The Body contains badly-formed JSOn")
+			return errors.New("the body contains badly-formed json")
 		case errors.As(err, &unmarshalTypeError):
 			if unmarshalTypeError.Field != "" {
-				return fmt.Errorf("the body contains Incorrect JSON type for field %q", unmarshalTypeError.Field)
+				return fmt.Errorf("the body contains Incorrect json type for field %q", unmarshalTypeError.Field)
 			}
-			return fmt.Errorf("The body contains the incorrect JSON type at character: %d", unmarshalTypeError.Offset)
+			return fmt.Errorf("the body contains the incorrect json type at character: %d", unmarshalTypeError.Offset)
 		case errors.Is(err, io.EOF):
-			return errors.New("The body must not be empty")
+			return errors.New("the body must not be empty")
 			//checking for unknown field errors
 		case strings.HasPrefix(err.Error(), "Json: unknown field"):
 			fieldName := strings.TrimPrefix(err.Error(), "json: unkown field ")

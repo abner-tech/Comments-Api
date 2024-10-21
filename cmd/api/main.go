@@ -47,6 +47,7 @@ func main() {
 
 	//release the database connection before exiting
 	defer db.Close()
+
 	logger.Info("Database Connection Pool Established")
 
 	appInstance := &applicationDependences{
@@ -64,6 +65,7 @@ func main() {
 	}
 
 	logger.Info("Starting Server", "address", apiServer.Addr, "environment", settings.environment)
+	err = apiServer.ListenAndServe()
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
