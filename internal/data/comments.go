@@ -99,6 +99,10 @@ func (c CommentModel) Get(id int64) (*Comment, error) {
 	return &comment, nil
 }
 
+// func (c CommentModel) GetAll(int64) (*Comment, error) {
+
+// }
+
 // update  a specific record from the comments table
 func (c CommentModel) Update(comment *Comment) error {
 	//the sql query to be excecuted against the DB table
@@ -116,4 +120,40 @@ func (c CommentModel) Update(comment *Comment) error {
 	defer cancel()
 	return c.DB.QueryRowContext(ctx, query, args...).Scan(&comment.Version)
 
+}
+
+// delete a specific comment form the comments table
+func (c CommentModel) Delete(id int64) error {
+	//check if the id is valid
+	if id < 1 {
+		return ErrRecordNotFound
+	}
+
+	//sql querry to be excecuted against the database table
+	query := `
+	DELETE FROM comments
+	WHERE id = $1
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// ExecContext does not return any rows unlike QueryRowContext.
+	// It only returns  information about the the query execution
+	// such as how many rows were affected
+	result, err := c.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	//maybe wrong id for record was given so we sort of try checking
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
 }
