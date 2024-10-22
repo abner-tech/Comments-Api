@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
+	"github.com/abner-tech/Comments-Api.git/internal/validator"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -101,4 +103,36 @@ func (a *applicationDependences) readIDParam(r *http.Request) (int64, error) {
 	}
 
 	return id, nil
+}
+
+func (a *applicationDependences) getSingleQueryParameter(queryParameter url.Values, key string, defaultValue string) string {
+	//url.values is a key:value hash map of the query parameters
+	result := queryParameter.Get(key)
+	if result == "" {
+		return defaultValue
+	}
+	return result
+}
+
+func (a *applicationDependences) getMultipleQueryParameters(queryParameter url.Values, key string, defaultValue []string) []string {
+	result := queryParameter.Get(key)
+	if result == "" {
+		return defaultValue
+	}
+	return strings.Split(result, ",")
+}
+
+// NOTE: this method can cause validation errors when attempting to convert from string to valid int value
+func (a *applicationDependences) getSingleIntigetParameter(queryParameter url.Values, key string, defaultValue int, v *validator.Validator) int {
+	result := queryParameter.Get(key)
+	if result == "" {
+		return defaultValue
+	}
+	//attempting to convert from string to int
+	intValue, err := strconv.Atoi(result)
+	if err != nil {
+		v.AddError(key, "must be an integer value")
+		return defaultValue
+	}
+	return intValue
 }

@@ -189,9 +189,23 @@ func (a *applicationDependences) deleteCommentHandler(w http.ResponseWriter, r *
 	}
 }
 
-func (a *applicationDependences) getAllCommentHandler(w http.ResponseWriter, r *http.Request) {
+func (a *applicationDependences) listCommentHandler(w http.ResponseWriter, r *http.Request) {
+	//create a struct to hold the query parameters
+	//Later, fields will be added for pagination and sorting (filters)
+	var queryParameterData struct {
+		Content string
+		Author  string
+	}
+
+	//get query parameters from url
+	queryParameter := r.URL.Query()
+
+	//load the query parameters into the created struct
+	queryParameterData.Content = a.getSingleQueryParameter(queryParameter, "content", "")
+	queryParameterData.Author = a.getSingleQueryParameter(queryParameter, "author", "")
+
 	//call GetAll to retrieve all comments of the DB
-	comments, err := a.commentModel.GetAll()
+	comments, err := a.commentModel.GetAll(queryParameterData.Content, queryParameterData.Author)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
