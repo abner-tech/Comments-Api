@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/abner-tech/Comments-Api.git/internal/data"
 	_ "github.com/lib/pq"
 )
 
@@ -24,8 +25,9 @@ type serverConfig struct {
 }
 
 type applicationDependences struct {
-	config serverConfig
-	logger *slog.Logger
+	config       serverConfig
+	logger       *slog.Logger
+	commentModel data.CommentModel
 }
 
 func main() {
@@ -51,8 +53,9 @@ func main() {
 	logger.Info("Database Connection Pool Established")
 
 	appInstance := &applicationDependences{
-		config: settings,
-		logger: logger,
+		config:       settings,
+		logger:       logger,
+		commentModel: data.CommentModel{DB: db},
 	}
 
 	apiServer := &http.Server{
