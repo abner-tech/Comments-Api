@@ -99,9 +99,36 @@ func (c CommentModel) Get(id int64) (*Comment, error) {
 	return &comment, nil
 }
 
-// func (c CommentModel) GetAll(int64) (*Comment, error) {
+func (c CommentModel) GetAll() (*[]Comment, error) {
+	query := `
+	SELECT id, created_at, content, author, version
+	FROM comments
+	ORDER BY id DESC
+	`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-// }
+	comments, err := c.DB.QueryContext(ctx, query)
+	//check for errors
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	var cmts []Comment
+	for comments.Next() {
+		var com Comment
+		if err := comments.Scan(&com.ID, &com.CreatedAt, &com.Content, &com.Author, &com.Version); err != nil {
+			return nil, err
+		}
+		cmts = append(cmts, com)
+	}
+	return &cmts, nil
+}
 
 // update  a specific record from the comments table
 func (c CommentModel) Update(comment *Comment) error {
