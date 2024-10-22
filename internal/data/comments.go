@@ -98,3 +98,22 @@ func (c CommentModel) Get(id int64) (*Comment, error) {
 	}
 	return &comment, nil
 }
+
+// update  a specific record from the comments table
+func (c CommentModel) Update(comment *Comment) error {
+	//the sql query to be excecuted against the DB table
+	//Every time make an update, version number is incremented
+
+	query := `
+	UPDATE comments
+	SET content=$1, author=$2, version=version+1
+	WHERE id = $3
+	RETURNING version
+	`
+
+	args := []any{comment.Content, comment.Author, comment.ID}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	return c.DB.QueryRowContext(ctx, query, args...).Scan(&comment.Version)
+
+}

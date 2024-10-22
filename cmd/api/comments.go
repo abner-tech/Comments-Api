@@ -63,6 +63,30 @@ func (a *applicationDependences) createCommentHandler(w http.ResponseWriter, r *
 	}
 }
 
+func (a *applicationDependences) fetchCommentByID(w http.ResponseWriter, r *http.Request) (*data.Comment, error) {
+	// Get the id from the URL /v1/comments/:id so that we
+	// can use it to query the comments table. We will
+	// implement the readIDParam() function later
+	id, err := a.readIDParam(r)
+	if err != nil {
+		a.notFoundResponse(w, r)
+
+	}
+
+	// Call Get() to retrieve the comment with the specified id
+	comment, err := a.commentModel.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			a.notFoundResponse(w, r)
+		default:
+			a.serverErrorResponse(w, r, err)
+		}
+
+	}
+	return comment, nil
+}
+
 func (a *applicationDependences) displayCommentHandler(w http.ResponseWriter, r *http.Request) {
 	// Get the id from the URL /v1/comments/:id so that we
 	// can use it to query the comments table. We will
@@ -86,6 +110,63 @@ func (a *applicationDependences) displayCommentHandler(w http.ResponseWriter, r 
 	}
 
 	// display the comment
+	data := envelope{
+		"comment": comment,
+	}
+	err = a.writeJSON(w, http.StatusOK, data, nil)
+	if err != nil {
+		a.serverErrorResponse(w, r, err)
+		return
+	}
+
+}
+
+func (a *applicationDependences) updateCommentHandler(w http.ResponseWriter, r *http.Request) {
+
+	comment, err := a.fetchCommentByID(w, r)
+	if err != nil {
+		return
+	}
+
+	// Use our temporary incomingData struct to hold the data
+	// Note: I have changed the types to pointer to differentiate
+	// between the client leaving a field empty intentionally
+	// and the field not needing to be updated
+	var incomingData struct {
+		Content *string `json:"content"`
+		Author  *string `json:"author"`
+	}
+
+	// perform the decoding
+	err = a.readJSON(w, r, &incomingData)
+	if err != nil {
+		a.badRequestResponse(w, r, err)
+		return
+	}
+	// We need to now check the fields to see which ones need updating
+	// if incomingData.Content is nil, no update was provided
+	if incomingData.Content != nil {
+		comment.Content = *incomingData.Content
+	}
+	// if incomingData.Author is nil, no update was provided
+	if incomingData.Author != nil {
+		comment.Author = *incomingData.Author
+	}
+
+	// Before we write the updates to the DB let's validate
+	v := validator.New()
+	data.ValidateComment(v, comment)
+	if !v.IsEmpty() {
+		a.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	// perform the update
+	err = a.commentModel.Update(comment)
+	if err != nil {
+		a.serverErrorResponse(w, r, err)
+		return
+	}
 	data := envelope{
 		"comment": comment,
 	}
