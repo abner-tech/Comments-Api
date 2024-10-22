@@ -3,12 +3,13 @@ package data
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/abner-tech/Comments-Api.git/internal/validator"
 )
 
-// each name begins with uppercase to make them exportable/public
+// each name begins with uppercase to make them exportable/ public
 type Comment struct {
 	ID        int64     `json:"id"`      //unique value per comment
 	Content   string    `json:"content"` //comment data
@@ -57,4 +58,43 @@ func ValidateComment(v *validator.Validator, comment *Comment) {
 	v.Check(len(comment.Content) <= 100, "content", "must not be more than 100 bytes long")
 	//check is author field is empty
 	v.Check(len(comment.Author) <= 25, "author", "must not be more than 25 bytes long")
+}
+
+// get a comment from DB based on ID
+func (c CommentModel) Get(id int64) (*Comment, error) {
+	//check if the id is valid
+	if id < 1 {
+		return nil, ErrRecordNotFound
+	}
+	//the sql query to be excecuted against the database table
+	query := `
+	SELECT id, created_at, content, author, version
+	FROM comments
+	WHERE id = $1
+	`
+
+	//declare a variable of type Comment to hold the returned values
+	var comment Comment
+
+	//set 3-second context/timer
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := c.DB.QueryRowContext(ctx, query, id).Scan(
+		&comment.ID,
+		&comment.Content,
+		&comment.Content,
+		&comment.Author,
+		&comment.Version,
+	)
+	//check for errors
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+	return &comment, nil
 }
