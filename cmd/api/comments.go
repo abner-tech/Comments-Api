@@ -195,6 +195,7 @@ func (a *applicationDependences) listCommentHandler(w http.ResponseWriter, r *ht
 	var queryParameterData struct {
 		Content string
 		Author  string
+		data.Fileters
 	}
 
 	//get query parameters from url
@@ -203,9 +204,20 @@ func (a *applicationDependences) listCommentHandler(w http.ResponseWriter, r *ht
 	//load the query parameters into the created struct
 	queryParameterData.Content = a.getSingleQueryParameter(queryParameter, "content", "")
 	queryParameterData.Author = a.getSingleQueryParameter(queryParameter, "author", "")
+	v := validator.New()
+
+	queryParameterData.Fileters.Page = a.getSingleIntigetParameter(queryParameter, "page", 1, v)
+	queryParameterData.Fileters.PageSize = a.getSingleIntigetParameter(queryParameter, "page_size", 10, v)
+
+	//check validity of filters
+	data.ValidateFilters(v, queryParameterData.Fileters)
+	if !v.IsEmpty() {
+		a.failedValidationResponse(w, r, v.Errors)
+		return
+	}
 
 	//call GetAll to retrieve all comments of the DB
-	comments, err := a.commentModel.GetAll(queryParameterData.Content, queryParameterData.Author)
+	comments, err := a.commentModel.GetAll(queryParameterData.Content, queryParameterData.Author, queryParameterData.Fileters)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):

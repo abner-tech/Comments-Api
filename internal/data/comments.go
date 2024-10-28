@@ -99,7 +99,7 @@ func (c CommentModel) Get(id int64) (*Comment, error) {
 	return &comment, nil
 }
 
-func (c CommentModel) GetAll(content string, author string) (*[]Comment, error) {
+func (c CommentModel) GetAll(content string, author string, filters Fileters) (*[]Comment, error) {
 	query := `
 	SELECT id, created_at, content, author, version
 	FROM comments
@@ -107,11 +107,13 @@ func (c CommentModel) GetAll(content string, author string) (*[]Comment, error) 
 		plainto_tsquery('simple', $1) OR $1 = '')
 	AND (to_tsvector('simple',author) @@
 		plainto_tsquery('simple',$2) OR $2 = '')
+	ORDER BY id
+	LIMIT $3 OFFSET $4
 	`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	comments, err := c.DB.QueryContext(ctx, query, content, author)
+	comments, err := c.DB.QueryContext(ctx, query, content, author, filters.limit(), filters.offset())
 	//check for errors
 	if err != nil {
 		switch {
