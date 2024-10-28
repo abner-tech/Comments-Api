@@ -206,8 +206,10 @@ func (a *applicationDependences) listCommentHandler(w http.ResponseWriter, r *ht
 	queryParameterData.Author = a.getSingleQueryParameter(queryParameter, "author", "")
 	v := validator.New()
 
-	queryParameterData.Fileters.Page = a.getSingleIntigetParameter(queryParameter, "page", 1, v)
-	queryParameterData.Fileters.PageSize = a.getSingleIntigetParameter(queryParameter, "page_size", 10, v)
+	queryParameterData.Fileters.Page = a.getSingleIntigerParameter(queryParameter, "page", 1, v)
+	queryParameterData.Fileters.PageSize = a.getSingleIntigerParameter(queryParameter, "page_size", 10, v)
+	queryParameterData.Fileters.Sorting = a.getSingleQueryParameter(queryParameter, "sorting", "id")
+	queryParameterData.Fileters.SortSafeList = []string{"id", "author", "-id", "-author"}
 
 	//check validity of filters
 	data.ValidateFilters(v, queryParameterData.Fileters)

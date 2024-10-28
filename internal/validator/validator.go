@@ -1,5 +1,13 @@
 package validator
 
+import (
+	"slices"
+)
+
+func PermittedValue(value string, permittedValues ...string) bool {
+	return slices.Contains(permittedValues, value)
+}
+
 // new type named Validator
 type Validator struct {
 	Errors map[string]string

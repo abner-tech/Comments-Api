@@ -123,7 +123,7 @@ func (a *applicationDependences) getMultipleQueryParameters(queryParameter url.V
 }
 
 // NOTE: this method can cause validation errors when attempting to convert from string to valid int value
-func (a *applicationDependences) getSingleIntigetParameter(queryParameter url.Values, key string, defaultValue int, v *validator.Validator) int {
+func (a *applicationDependences) getSingleIntigerParameter(queryParameter url.Values, key string, defaultValue int, v *validator.Validator) int {
 	result := queryParameter.Get(key)
 	if result == "" {
 		return defaultValue
