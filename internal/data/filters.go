@@ -12,6 +12,14 @@ type Fileters struct {
 	PageSize int //how many records per page
 }
 
+type Metadata struct {
+	CurrentPage  int `json:"current_page, omitempty"`
+	PageSize     int `json:"page_size, omitempty"`
+	FirstPage    int `json:"page_size, omitempty"`
+	LastPage     int `json:"last_page, omitempty"`
+	TotalRecords int `json:"total_records, omitempty"`
+}
+
 //we validate page and Page size
 //follow same approach used to validate a comment
 
@@ -31,4 +39,18 @@ func (f Fileters) limit() int {
 // and how many remain to be sent
 func (f Fileters) offset() int {
 	return (f.Page - 1) * f.PageSize
+}
+
+// Calculate the matadata
+func calculateMetaData(totalRecords int, currentPage int, pageSize int) Metadata {
+	if totalRecords == 0 {
+		return Metadata{}
+	}
+	return Metadata{
+		CurrentPage:  currentPage,
+		PageSize:     pageSize,
+		FirstPage:    1,
+		LastPage:     (totalRecords + pageSize - 1) / pageSize,
+		TotalRecords: totalRecords,
+	}
 }

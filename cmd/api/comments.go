@@ -217,7 +217,7 @@ func (a *applicationDependences) listCommentHandler(w http.ResponseWriter, r *ht
 	}
 
 	//call GetAll to retrieve all comments of the DB
-	comments, err := a.commentModel.GetAll(queryParameterData.Content, queryParameterData.Author, queryParameterData.Fileters)
+	comments, metadata, err := a.commentModel.GetAll(queryParameterData.Content, queryParameterData.Author, queryParameterData.Fileters)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
@@ -230,7 +230,8 @@ func (a *applicationDependences) listCommentHandler(w http.ResponseWriter, r *ht
 	}
 
 	data := envelope{
-		"comments": comments,
+		"comments":  comments,
+		"@metadata": metadata,
 	}
 	err = a.writeJSON(w, http.StatusOK, data, nil)
 	if err != nil {

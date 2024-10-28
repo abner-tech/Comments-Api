@@ -99,9 +99,9 @@ func (c CommentModel) Get(id int64) (*Comment, error) {
 	return &comment, nil
 }
 
-func (c CommentModel) GetAll(content string, author string, filters Fileters) (*[]Comment, error) {
+func (c CommentModel) GetAll(content string, author string, filters Fileters) ([]*Comment, Metadata, error) {
 	query := `
-	SELECT id, created_at, content, author, version
+	SELECT COUNT(*) OVER(), id, created_at, content, author, version
 	FROM comments
 	WHERE (to_tsvector('simple',content) @@
 		plainto_tsquery('simple', $1) OR $1 = '')
@@ -113,26 +113,37 @@ func (c CommentModel) GetAll(content string, author string, filters Fileters) (*
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	comments, err := c.DB.QueryContext(ctx, query, content, author, filters.limit(), filters.offset())
+	rows, err := c.DB.QueryContext(ctx, query, content, author, filters.limit(), filters.offset())
 	//check for errors
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return nil, ErrRecordNotFound
+			return nil, Metadata{}, err
 		default:
-			return nil, err
+			return nil, Metadata{}, err
 		}
 	}
 
-	var cmts []Comment
-	for comments.Next() {
+	defer rows.Close()
+	totalRecords := 0
+	cmts := []*Comment{}
+
+	for rows.Next() {
 		var com Comment
-		if err := comments.Scan(&com.ID, &com.CreatedAt, &com.Content, &com.Author, &com.Version); err != nil {
-			return nil, err
+		err := rows.Scan(&totalRecords, &com.ID, &com.CreatedAt, &com.Content, &com.Author, &com.Version)
+		if err != nil {
+			return nil, Metadata{}, err
 		}
-		cmts = append(cmts, com)
+		cmts = append(cmts, &com)
 	}
-	return &cmts, nil
+	err = rows.Err()
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+
+	//create the metadata
+	metadata := calculateMetaData(totalRecords, filters.Page, filters.PageSize)
+	return cmts, metadata, nil
 }
 
 // update  a specific record from the comments table
