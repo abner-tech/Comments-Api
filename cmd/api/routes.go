@@ -23,5 +23,5 @@ func (a *applicationDependences) routes() http.Handler {
 	router.HandlerFunc(http.MethodPatch, "/v1/comments/:id", a.updateCommentHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/comments/:id", a.deleteCommentHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/comments", a.listCommentHandler)
-	return a.recoverPanic(router)
+	return a.recoverPanic(a.rateLimiting(router))
 }
