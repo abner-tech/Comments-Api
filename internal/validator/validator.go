@@ -1,8 +1,17 @@
 package validator
 
 import (
+	"regexp"
 	"slices"
 )
+
+// regexp to check if an email is valid
+var EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+
+// check if email provided is valid
+func Matches(value string, rx *regexp.Regexp) bool {
+	return rx.MatchString(value)
+}
 
 func PermittedValue(value string, permittedValues ...string) bool {
 	return slices.Contains(permittedValues, value)
