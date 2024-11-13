@@ -6,9 +6,11 @@ import (
 	"flag"
 	"log/slog"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/abner-tech/Comments-Api.git/internal/data"
+	"github.com/abner-tech/Comments-Api.git/internal/mailer"
 	_ "github.com/lib/pq"
 )
 
@@ -25,6 +27,13 @@ type serverConfig struct {
 		burst   int
 		enabled bool
 	}
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
+	}
 }
 
 type applicationDependences struct {
@@ -32,6 +41,8 @@ type applicationDependences struct {
 	logger       *slog.Logger
 	commentModel data.CommentModel
 	userModel    data.UserModel
+	mailer       mailer.Mailer
+	wg           sync.WaitGroup
 }
 
 func main() {
@@ -40,9 +51,21 @@ func main() {
 	flag.StringVar(&settings.environment, "env", "development", "Environment(development|staging|production)")
 	//read the dsn
 	flag.StringVar(&settings.db.dsn, "db-dsn", "postgres://comments:comments@localhost/comments?sslmode=disable", "PostgreSQL DSN")
+
+	//limiter flags
 	flag.Float64Var(&settings.limiter.rps, "limiter-rps", 2, "rate limiter maximum request per second")
 	flag.IntVar(&settings.limiter.burst, "limiter-burst", 5, "rate limiter maximum burst")
 	flag.BoolVar(&settings.limiter.enabled, "limiter-enabled", true, "enable rate limiter")
+
+	//mailer flags
+	flag.StringVar(&settings.smtp.host, "smtp-host", "sandbox.smtp.mailtrap.io", "SMTP host")
+	//many ports are available, 25, 465, 587, 2525. If 25 doesn't work choose another
+	flag.IntVar(&settings.smtp.port, "smtp-port", 25, "SMTP port")
+	//personnal values provided by mailtrap
+	flag.StringVar(&settings.smtp.username, "smtp-username", "839422506900bd", "SMTP username")
+	flag.StringVar(&settings.smtp.password, "smtp-password", "ffb5cf13aa90aa", "SMTP password")
+	flag.StringVar(&settings.smtp.sender, "smtp-sender", "Comments Community <no-reply@commentscommunity.amencias.net>", "SMTP sender")
+
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -64,6 +87,7 @@ func main() {
 		logger:       logger,
 		commentModel: data.CommentModel{DB: db},
 		userModel:    data.UserModel{DB: db},
+		mailer:       mailer.New(settings.smtp.host, settings.smtp.port, settings.smtp.username, settings.smtp.password, settings.smtp.sender),
 	}
 
 	// apiServer := &http.Server{

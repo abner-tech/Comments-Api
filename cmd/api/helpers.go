@@ -136,3 +136,18 @@ func (a *applicationDependences) getSingleIntigerParameter(queryParameter url.Va
 	}
 	return intValue
 }
+
+// run a function in the background and recover from panic
+func (a *applicationDependences) background(fn func()) {
+	a.wg.Add(1)
+	go func() {
+		defer a.wg.Done()
+		defer func() {
+			err := recover()
+			if err != nil {
+				a.logger.Error(fmt.Sprintf("%v", err))
+			}
+		}()
+		fn() //running the function that was passed to run as parameter
+	}()
+}
