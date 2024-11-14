@@ -43,6 +43,7 @@ type applicationDependences struct {
 	userModel    data.UserModel
 	mailer       mailer.Mailer
 	wg           sync.WaitGroup
+	toekModel    data.TokenModel
 }
 
 func main() {
@@ -88,6 +89,7 @@ func main() {
 		commentModel: data.CommentModel{DB: db},
 		userModel:    data.UserModel{DB: db},
 		mailer:       mailer.New(settings.smtp.host, settings.smtp.port, settings.smtp.username, settings.smtp.password, settings.smtp.sender),
+		toekModel:    data.TokenModel{DB: db},
 	}
 
 	// apiServer := &http.Server{

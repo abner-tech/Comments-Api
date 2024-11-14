@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"time"
@@ -88,6 +89,47 @@ func (u *UserModel) GetByEmail(email string) (*User, error) {
 	return &user, nil
 }
 
+func (u *UserModel) GetForToken(tokenScope, tokenPlainText string) (*User, error) {
+	tokenHash := sha256.Sum256([]byte(tokenPlainText))
+
+	query := `
+	SELECT users.id, users.created_at, users.username, users.email, users.password_hash, users.activated, users.version
+	FROM users
+	INNER JOIN tokens
+	ON users.id = tokens.user_id
+	WHERE tokens.hash = $1
+	AND tokens.scope = $2
+	and tokens.expiry > $3
+	`
+
+	args := []any{tokenHash[:], tokenScope, time.Now()}
+
+	var user User
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err := u.DB.QueryRowContext(ctx, query, args...).Scan(
+		&user.ID,
+		&user.Created_At,
+		&user.Username,
+		&user.Email,
+		&user.Password.hash,
+		&user.Activated,
+		&user.Version,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+	//return the correct user
+	return &user, nil
+}
+
 /*
 update a user. If the version number is different than what was before we ran the query , it means someone
 
@@ -97,7 +139,7 @@ func (u *UserModel) Update(user *User) error {
 	query := `
 	UPDATE users
 	SET username = $1, email =$2, password_hash = $3, activated = $4,
-	version = version = 1
+	version = version + 1
 	WHERE id = $5 AND version = $6
 	RETURNING version
 	`
@@ -179,5 +221,4 @@ func ValidateUser(v *validator.Validator, user *User) {
 	if user.Password.hash == nil {
 		panic("missing password hash for user")
 	}
-
 }
