@@ -25,5 +25,6 @@ func (a *applicationDependences) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/comments", a.listCommentHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/users", a.registerUserhandler)
 	router.HandlerFunc(http.MethodPut, "/v1/users/activated", a.activateUserHandler)
-	return a.recoverPanic(a.rateLimiting(router))
+	router.HandlerFunc(http.MethodPost, "/v1/tokens/authentication", a.createAuthenticationTokenHandler)
+	return a.recoverPanic(a.rateLimiting(a.authenticate(router)))
 }

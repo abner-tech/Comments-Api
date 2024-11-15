@@ -56,7 +56,7 @@ func (a *applicationDependences) registerUserhandler(w http.ResponseWriter, r *h
 	}
 
 	//new activation token to expire in 3 days time
-	token, err := a.toekModel.New(user.ID, 3*24*time.Hour, data.ScopeActivation)
+	token, err := a.tokenModel.New(user.ID, 3*24*time.Hour, data.ScopeActivation)
 	if err != nil {
 		a.serverErrorResponse(w, r, err)
 		return
@@ -138,7 +138,7 @@ func (a *applicationDependences) activateUserHandler(w http.ResponseWriter, r *h
 	}
 
 	//delete actiavtion token after user activation
-	err = a.toekModel.DeleteAllForUser(data.ScopeActivation, user.ID)
+	err = a.tokenModel.DeleteAllForUser(data.ScopeActivation, user.ID)
 	if err != nil {
 		a.serverErrorResponse(w, r, err)
 		return

@@ -64,3 +64,17 @@ func (a *applicationDependences) editConflictResponse(w http.ResponseWriter, r *
 	message := "unable to update the record due to an edit conflict, please try again"
 	a.errorResponseJSON(w, r, http.StatusConflict, message)
 }
+
+// return 404 unauthorized status code
+func (a *applicationDependences) invalidCredentialResponse(w http.ResponseWriter, r *http.Request) {
+	message := "invalid authentication response"
+	a.errorResponseJSON(w, r, http.StatusUnauthorized, message)
+}
+
+// We set the WWW-Authenticate header to give a hint to the user as to what they need to provide. Don't want to leave them guessing
+func (a *applicationDependences) invalidAuthenticationTokenResponse(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("www-Authenticate", "Bearer")
+
+	message := "invalid or missing authentication token"
+	a.errorResponseJSON(w, r, http.StatusUnauthorized, message)
+}

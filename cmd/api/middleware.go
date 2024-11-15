@@ -1,12 +1,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/abner-tech/Comments-Api.git/internal/data"
+	"github.com/abner-tech/Comments-Api.git/internal/validator"
 	"golang.org/x/time/rate"
 )
 
@@ -80,5 +84,60 @@ func (a *applicationDependences) rateLimiting(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 
+	})
+}
+
+func (a *applicationDependences) authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		/*This header tells the servers not to cache the response when
+		the Authorization header changes. This also means that the server is not
+		supposed to serve the same cached data to all users regardless of their
+		Authorization values. Each unique user gets their own cache entry*/
+		w.Header().Add("Vary", "Authorization")
+
+		/*Get the Authorization Header from the request. It should have the Bearer token*/
+		authorizationHeader := r.Header.Get("Authorization")
+
+		//if no authorization header found, then its an anonymous user
+		if authorizationHeader == "" {
+			r = a.contextSetUser(r, data.AnonymouseUser)
+			next.ServeHTTP(w, r)
+			return
+		}
+		/* Bearer token present so parse it. The Bearer token is in the form
+		Authorization: Bearer IEYZQUBEMPPAKPOAWTPV6YJ6RM
+		We will implement invalidAuthenticationTokenResponse() later */
+
+		headerParts := strings.Split(authorizationHeader, " ")
+		if len(headerParts) != 2 || headerParts[0] != "Bearer" {
+			a.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+		//get the actual token
+		token := headerParts[1]
+		//validatte
+		v := validator.New()
+
+		data.ValidatetokenPlaintext(v, token)
+		if !v.IsEmpty() {
+			a.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		//get the user info relatedw with this authentication token
+		user, err := a.userModel.GetForToken(data.ScopeAuthentication, token)
+		if err != nil {
+			switch {
+			case errors.Is(err, data.ErrRecordNotFound):
+				a.invalidAuthenticationTokenResponse(w, r)
+			default:
+				a.serverErrorResponse(w, r, err)
+			}
+			return
+		}
+		//add the retrieved user info to the context
+		r = a.contextSetUser(r, user)
+		//call the next handler in the chair
+		next.ServeHTTP(w, r)
 	})
 }

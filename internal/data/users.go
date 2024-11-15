@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var AnonymouseUser = &User{}
+
 type User struct {
 	ID         int64     `json:"id"`
 	Created_At time.Time `json:"created_at"`
@@ -221,4 +223,9 @@ func ValidateUser(v *validator.Validator, user *User) {
 	if user.Password.hash == nil {
 		panic("missing password hash for user")
 	}
+}
+
+// check if current user is anonymous
+func (u *User) IsAnonymous() bool {
+	return u == AnonymouseUser
 }
