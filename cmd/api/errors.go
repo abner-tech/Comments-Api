@@ -74,7 +74,6 @@ func (a *applicationDependences) invalidCredentialResponse(w http.ResponseWriter
 // We set the WWW-Authenticate header to give a hint to the user as to what they need to provide. Don't want to leave them guessing
 func (a *applicationDependences) invalidAuthenticationTokenResponse(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("www-Authenticate", "Bearer")
-
 	message := "invalid or missing authentication token"
 	a.errorResponseJSON(w, r, http.StatusUnauthorized, message)
 }
